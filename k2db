@@ -12,7 +12,7 @@ use Term::Table;
 
 #......................................................................................
 
-my $VERSION = '0.2.1';
+my $VERSION = '0.3.0';
 my $EXE = path($0)->basename;
 
 #......................................................................................
@@ -62,6 +62,12 @@ if ($opt{'l'}) {
   my $db = get_installed_dbs($opt{'D'});
   #dmp($db); 
   print_dbs($db);
+  exit(0);
+}
+if ($opt{'L'}) {
+  my $dbs = get_remote_dbs($opt{'U'});
+#  print_dbs($dbs);
+  exit(0);
 }
 
 exit(0);
@@ -148,9 +154,35 @@ sub is_k2db {
   return $size;
 }
 #.............................................
-sub get_index {
+sub get_remote_dbs {
   my($url) = @_;
-  my $ff = File::Fetch->new(url=>$opt{'U'});
+  msg("Fetching: $url");
+  my $ff = File::Fetch->new(uri=>$url) 
+    or err("Bad URI: $url");
+  $ff->fetch(to => \my $html) or err($ff->error);
+  #dbg("HTML =",substr($html,0,30));
+
+  # <td><a href="https://genome-idx.s3.amazonaws.com/kraken/minikraken2_v2_8GB_201904.tgz">.tar.gz</a></td>
+  my $db = {};
+  while ($html =~ m,href="(https://genome-idx\.s3\.amazonaws\.com/kraken/([^"]+?\.tar\.gz))",xsg) {
+    my($url,$file) = ($1,$2);
+    dbg("Can see $2");
+    my $date = "NO_DATE";
+    $date=$1 if $file =~ m/_(\d{6,})\.t/;
+    my $size = "NO_SIZE";
+    $size=$1 if $file =~ m/_(\d{1,3}GB)_/i;
+    $db->{$file} = {
+      NAME => $file,
+      DATE => $date,
+      SIZE => $size,
+      URL  => $url,
+    }
+  }
+  dmp($db);
+  return $db;
+}
+#.............................................
+sub parse_html_page {
 }
 #.............................................
 sub print_version {
