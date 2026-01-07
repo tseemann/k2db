@@ -12,14 +12,27 @@ Kraken 2 database management tool
 
 ```
 % k2db -v
-0.1.0
+0.2.1
+
+# LIst local databases in $KRAKEN2_DB_PATH
+% k2db -l
++---+-------+-----------+--------+------------+
+| N | ALIAS | NAME      | SIZE   | DATE       |
++---+-------+-----------+--------+------------+
+| 1 |       | pludpf    |  16  B | 2025-10-23 |
+| 2 | fungi | myco_2024 |   3 GB | 2026-01-07 |
++---+-------+-----------+--------+------------+
+
+# List available databases at Ben Langmeads site
+% kddb -L
+
+FIXME
 
 ```
 
 ## Installation
 
-### Conda
-If you are using [Conda](https://bioconda.github.io/user/install.html)
+Please use [Bioconda](https://bioconda.github.io/user/install.html)
 ```
 % conda install -c bioconda k2db # COMING SOON
 $ k2db -h
