@@ -8,6 +8,10 @@
 
 Kraken 2 database management tool
 
+## Status
+
+:construction: `k2db` is currently under development
+
 ## Quick Start
 
 ```
@@ -56,4 +60,4 @@ Please submit via the [Github Issues page](https://github.com/tseemann/k2db/issu
 
 ## Author
 
-* [Torsten Seemann](https://tseemann.github.io/)
+[Torsten Seemann](https://tseemann.github.io/)
