@@ -1,0 +1,56 @@
+#!/usr/bin/env perl
+use 5.32.0;
+use strict;
+use warnings;
+use Data::Dumper;
+use Getopt::Std;
+use Path::Tiny;
+
+#......................................................................................
+
+my $VERSION = '0.1.0';
+my $EXE = path($0)->basename;
+
+ #......................................................................................
+
+my $quiet=0;
+sub msg { say STDERR "@_" unless $quiet; }
+sub wrn { msg("WARNING:", @_); }
+sub err { msg("ERROR:", @_); exit(1); }
+
+#......................................................................................
+
+my %opt = ();
+
+sub usage {
+  print <<"EOHELP";
+SYNOPSIS
+  Download and manage Kraken2 databases
+USAGE
+  $EXE [opts] 
+OPTIONS
+  -h     Show this help
+  -v     Print version and exit
+  -q     Quiet mode
+END
+EOHELP
+  exit(0); 
+}
+getopts('hqv', \%opt) or exit(-1);
+$opt{'h'} and usage();
+@ARGV or usage(1);
+$quiet=1 if $opt{'q'};
+$opt{'v'} and print_version();
+
+
+#.............................................
+
+exit(0);
+
+#.............................................
+sub print_version {
+  say "$EXE $VERSION";
+  exit(0);
+}
+#.............................................
+

@@ -1,0 +1,11 @@
+channels:
+  - conda-forge
+  - bioconda
+dependencies:
+  - kraken2
+  - perl >=5.32
+  - perl-www-mechanize
+  - perl-path-tiny
+  - perl-json
+  - bats-core
+  - make
