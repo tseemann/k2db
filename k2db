@@ -69,7 +69,7 @@ exit(0);
 #.............................................
 sub print_dbs {
   my($db) = @_;
-  my @col = qw"# ALIAS NAME SIZE DATE";
+  my @col = qw"N ALIAS NAME SIZE DATE";
   my $count=0;
   my $table = Term::Table->new(
     max_width => 1000,
