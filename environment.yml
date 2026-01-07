@@ -6,6 +6,8 @@ dependencies:
   - perl >=5.32
   - perl-www-mechanize
   - perl-path-tiny
+  - perl-time-piece
+  - perl-term-table
   - perl-json
   - bats-core
   - make

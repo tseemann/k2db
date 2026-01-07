@@ -6,6 +6,7 @@ setup() {
   dir=$(dirname "$BATS_TEST_FILENAME")
   cd "$dir"
   bin="$dir/../$name"
+  KRAKEN2_DB_PATH="$dir"
 }
 
 @test "Script syntax check" {
@@ -19,12 +20,14 @@ setup() {
   run -0 $bin -h
   [[ "$output" =~ "USAGE" ]]
 }
-@test "No parameters" {
-  run -0 $bin
-  [[ "$output" =~ "USAGE" ]]
-}
 @test "Bad option" {
   run ! $bin -X
   [[ "$output" =~ "Unknown option" ]]
   [[ ! "$output" =~ "USAGE" ]]
+}
+@test "List installed DBs" {
+  run -0 $bin -l
+  [[ "$output" =~ "fake_db" ]]
+  [[ "$output" =~ "bigfakedb" ]]
+  [[ ! "$output" =~ "broken" ]]
 }

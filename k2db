@@ -2,26 +2,33 @@
 use 5.32.0;
 use strict;
 use warnings;
+use File::Fetch;
+#use WWW::Mechanize;
 use Data::Dumper;
 use Getopt::Std;
 use Path::Tiny;
+use Time::Piece;
+use Term::Table;
 
 #......................................................................................
 
-my $VERSION = '0.1.0';
+my $VERSION = '0.2.0';
 my $EXE = path($0)->basename;
 
+#......................................................................................
+my %opt = (
+ 'U' => 'https://benlangmead.github.io/aws-indexes/k2',
+ 'D' => $ENV{'KRAKEN2_DB_PATH'} // '',
+ 'q' => 0,
+ 'g' => 0,
+);
  #......................................................................................
-
-my $quiet=0;
-sub msg { say STDERR "@_" unless $quiet; }
+sub msg { say STDERR "@_" unless $opt{'q'}; }
 sub wrn { msg("WARNING:", @_); }
 sub err { msg("ERROR:", @_); exit(1); }
-
+sub dbg { msg("DEBUG:", @_) if $opt{'g'}; }
+sub dmp { msg(Dumper(@_)); }
 #......................................................................................
-
-my %opt = ();
-
 sub usage {
   print <<"EOHELP";
 SYNOPSIS
@@ -29,28 +36,139 @@ SYNOPSIS
 USAGE
   $EXE [opts] 
 OPTIONS
-  -h     Show this help
-  -v     Print version and exit
-  -q     Quiet mode
+  -h       Show this help
+  -v       Print version and exit
+  -q       Quiet mode
+  -g       Debug mode
+COMMANDS
+  -l       List installed K2DBs
+  -L       List downloadable K2DBs
+  -F NAME  Download this K2DB
+LOCATIONS
+  -U URL   Official K2DB website [$opt{U}]
+  -D PATH  Local K2DB path [$opt{D}]
 END
 EOHELP
   exit(0); 
 }
-getopts('hqv', \%opt) or exit(-1);
-$opt{'h'} and usage();
-@ARGV or usage(1);
-$quiet=1 if $opt{'q'};
+getopts('hqgvlLF:U:D:', \%opt) or exit(-1);
+$opt{'h'} and usage(0);
 $opt{'v'} and print_version();
-
+#@ARGV or usage(1);
 
 #.............................................
 
+if ($opt{'l'}) {
+  my $db = get_installed_dbs($opt{'D'});
+  #dmp($db); 
+  print_dbs($db);
+}
+
 exit(0);
 
+#.............................................
+sub print_dbs {
+  my($db) = @_;
+  my @col = qw"# ALIAS NAME SIZE DATE";
+  my $count=0;
+  my $table = Term::Table->new(
+    max_width => 1000,
+    header => \@col,
+    rows => [
+      map { [
+        ++$count,
+        $db->{$_}{ALIAS},        
+        $db->{$_}{NAME},
+        $db->{$_}{SIZE},
+        $db->{$_}{DATE},
+      ] }
+      sort keys %$db,
+    ]
+  );
+  say $_ for $table->render;
+}
+#.............................................
+sub OLD_print_dbs {
+  my($db) = @_;
+  for my $d (sort keys %$db) {
+    my $k = $db->{$d};
+    my $name = $k->{NAME};
+    $name = $k->{ALIAS}." -> ".$name if $k->{ALIAS};
+    print
+      $k->{DATE},
+      " | ",$k->{SIZE},
+      " | ",$name,
+      #$k->{PATH},
+      "\n";
+  }
+}
+#.............................................
+sub get_installed_dbs {
+  my($p) = @_;
+  $p = path($p);
+  $p->assert( sub { $_->is_dir } );
+  my $db = {};
+  my @alias;
+  for my $c ($p->children) {
+    if ($c->is_dir and !-l $c and my $size=is_k2db($c)) {
+      my $name = $c->basename;
+      dbg("$name => $c");
+      $db->{$c} = {
+        NAME => $name,
+        PATH => $c->stringify,
+        SIZE => human_size($size),
+        DATE => localtime($c->stat->mtime)->strftime('%Y-%m-%d'),
+      }
+    }
+    elsif ($c->is_dir and -l $c)  {
+      # keep track of symlinks for later
+      push @alias, $c;
+    }
+  }
+  # now check for valid symlinked DBs
+  for my $a (@alias) {
+    my $rp = $a->realpath;
+    if ( exists $db->{$rp} ) {
+      $db->{$rp}{ALIAS} = $a->basename;
+    }
+  }
+  return $db;
+}
+#.............................................
+sub is_k2db {
+  my($d) = @_;
+  dbg("Validating k2DB: $d");
+  my $size = 0;
+  for my $fn (qw"hash.k2d opts.k2d taxo.k2d") {
+    my $path = $d->child($fn);
+    dbg("$fn | $path");
+    return unless -r $path and -s _ ;
+    $size += $path->size;
+  }
+  return $size;
+}
+#.............................................
+sub get_index {
+  my($url) = @_;
+  my $ff = File::Fetch->new(url=>$opt{'U'});
+}
 #.............................................
 sub print_version {
   say "$EXE $VERSION";
   exit(0);
 }
 #.............................................
-
+sub tsv {
+  return join("\t", @_)."\n";
+}
+#.............................................
+sub human_size {
+  my($b) = @_;
+  my @units = qw"B KB MB GB TB PB YB";
+  for my $u (@units) {
+    return sprintf "%3d %2s",$b,$u if $b < 1000;
+    $b = int(($b+500)/1000);
+  }
+  return "INFINITE";
+}
+#.............................................
